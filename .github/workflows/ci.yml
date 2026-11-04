@@ -1,0 +1,50 @@
+name: ci
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Install mise
+        uses: jdx/mise-action@v5
+
+      - name: Install toolchains
+        run: |
+          pipx install uv
+          rustup component add rust-analyzer clippy
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: .e2e
+          key: e2e-${{ runner.os }}-${{ hashFiles('test/e2e/scripts/install-lsp.ts') }}
+          restore-keys: e2e-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: mise run init
+
+      - name: Run format
+        run: mise run format
+
+      - name: Run lint
+        run: mise run lint
+
+      - name: Run types
+        run: mise run types
+
+      - name: Run unit tests
+        run: mise run test:unit
+
+      - name: Run e2e tests
+        run: mise run test:e2e

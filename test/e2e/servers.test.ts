@@ -1,5 +1,6 @@
 import { afterAll, describe, expect, it } from "bun:test";
 import path from "node:path";
+import { TextDocument } from "vscode-languageserver-textdocument";
 import { LspManager } from "../../src/lsp/manager.ts";
 import { buildTools, type OpencodeTool } from "../../src/tools/builder.ts";
 import { DEFAULT_TOOL_DEFINITIONS } from "../../src/tools/registry.ts";
@@ -155,9 +156,8 @@ async function executeToolByName(opencodeTools: OpencodeTool[], toolName: string
 }
 
 function findToolInputPosition(fileText: string, symbolName: string) {
-  const lines = fileText.split("\n");
-  const line = lines.findIndex((lineText) => lineText.includes(symbolName));
-  return { line: line + 1, character: lines[line]!.indexOf(symbolName) + 1 };
+  const { line, character } = TextDocument.create("", "", 0, fileText).positionAt(fileText.indexOf(symbolName));
+  return { line: line + 1, character: character + 1 };
 }
 
 afterAll(async () => {

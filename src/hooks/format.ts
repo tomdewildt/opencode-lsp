@@ -98,7 +98,7 @@ function formatDiagnosticsBlock(
   limit: number,
 ): string {
   const reportedDiagnostics = filterBySeverity(diagnostics, severity);
-  if (reportedDiagnostics.length === 0 || limit <= 0) {
+  if (reportedDiagnostics.length === 0) {
     return "";
   }
 

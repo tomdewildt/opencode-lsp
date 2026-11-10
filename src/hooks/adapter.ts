@@ -1,9 +1,5 @@
 import path from "node:path";
 
-function getToolField(toolData: unknown, key: string): unknown {
-  return typeof toolData === "object" && toolData !== null ? (toolData as Record<string, unknown>)[key] : undefined;
-}
-
 function getFilesEditedByPatch(patchOutput: unknown): string[] {
   const appliedChanges = getToolField(patchOutput, "applied");
   if (!Array.isArray(appliedChanges)) {
@@ -37,6 +33,10 @@ export function getFilesEditedByToolCall(
   })();
 
   return editedFiles.flatMap((file) => (typeof file === "string" ? [path.resolve(projectDirectory, file)] : []));
+}
+
+export function getToolField(toolData: unknown, key: string): unknown {
+  return typeof toolData === "object" && toolData !== null ? (toolData as Record<string, unknown>)[key] : undefined;
 }
 
 export function buildToolResultContent<C>(

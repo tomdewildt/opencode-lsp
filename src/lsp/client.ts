@@ -469,14 +469,14 @@ export class LspClient {
     // Only a "full" response carries diagnostics. "unchanged" means the stored ones are still current.
     const hasDiagnosticsForFile = diagnosticsResponse.kind === DocumentDiagnosticReportKind.Full;
     if (hasDiagnosticsForFile) {
-      this.#pulledDiagnosticsByFile.set(file, deduplicateDiagnostics(diagnosticsResponse.items));
+      this.#pulledDiagnosticsByFile.set(file, diagnosticsResponse.items);
     }
 
     // The response can also carry other files whose diagnostics changed, e.g. files that import this one.
     for (const [relatedUri, relatedResponse] of Object.entries(diagnosticsResponse.relatedDocuments ?? {})) {
       const relatedFile = this.#getFileForUri(relatedUri);
       if (relatedFile && relatedResponse.kind === DocumentDiagnosticReportKind.Full) {
-        this.#pulledDiagnosticsByFile.set(relatedFile, deduplicateDiagnostics(relatedResponse.items));
+        this.#pulledDiagnosticsByFile.set(relatedFile, relatedResponse.items);
       }
     }
 

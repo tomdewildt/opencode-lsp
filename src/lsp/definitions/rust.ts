@@ -1,28 +1,19 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { getMarkerDirectoryForFileOrDefault } from "../workspace.ts";
+import { findMatchingDirectory, getMarkerDirectoryForFileOrDefault } from "../workspace.ts";
 import { buildBinaryNotFound, buildLaunchConfig, findBinary, type ServerDefinition } from "./server.ts";
 
 const RUST_EXTENSIONS = [".rs"];
 const RUST_WORKSPACE_FILES = ["Cargo.toml", "Cargo.lock"];
 
+async function isCargoWorkspaceDirectory(directory: string): Promise<boolean> {
+  const manifest = await readFile(path.join(directory, "Cargo.toml"), "utf8").catch(() => "");
+  return manifest.includes("[workspace]");
+}
+
 async function findCargoWorkspaceDirectory(file: string, projectDirectory: string): Promise<string> {
   const crateDirectory = await getMarkerDirectoryForFileOrDefault(file, projectDirectory, RUST_WORKSPACE_FILES);
-
-  let currentDirectory = crateDirectory;
-  while (currentDirectory.startsWith(projectDirectory)) {
-    const manifest = await readFile(path.join(currentDirectory, "Cargo.toml"), "utf8").catch(() => "");
-    if (manifest.includes("[workspace]")) {
-      return currentDirectory;
-    }
-
-    const parentDirectory = path.dirname(currentDirectory);
-    if (parentDirectory === currentDirectory) {
-      break;
-    }
-    currentDirectory = parentDirectory;
-  }
-  return crateDirectory;
+  return (await findMatchingDirectory(crateDirectory, projectDirectory, isCargoWorkspaceDirectory)) ?? crateDirectory;
 }
 
 export const rust: ServerDefinition = {

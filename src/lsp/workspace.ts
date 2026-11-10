@@ -1,7 +1,7 @@
 import { access, readdir } from "node:fs/promises";
 import path from "node:path";
 
-async function hasMarkerFile(directory: string, marker: string): Promise<boolean> {
+export async function hasMarkerFile(directory: string, marker: string): Promise<boolean> {
   if (!marker.includes("*")) {
     return access(path.join(directory, marker)).then(
       () => true,
@@ -15,17 +15,15 @@ async function hasMarkerFile(directory: string, marker: string): Promise<boolean
   return directoryEntries.some((entry) => markerPattern.match(entry));
 }
 
-export async function findMarkerDirectory(
+export async function findMatchingDirectory(
   startDirectory: string,
   stopDirectory: string,
-  markers: readonly string[],
+  isMatchingDirectory: (directory: string) => Promise<boolean>,
 ): Promise<string | undefined> {
   let currentDirectory = startDirectory;
   while (true) {
-    for (const marker of markers) {
-      if (await hasMarkerFile(currentDirectory, marker)) {
-        return currentDirectory;
-      }
+    if (await isMatchingDirectory(currentDirectory)) {
+      return currentDirectory;
     }
 
     const parentDirectory = path.dirname(currentDirectory);
@@ -34,6 +32,17 @@ export async function findMarkerDirectory(
     }
     currentDirectory = parentDirectory;
   }
+}
+
+export function findMarkerDirectory(
+  startDirectory: string,
+  stopDirectory: string,
+  markers: readonly string[],
+): Promise<string | undefined> {
+  return findMatchingDirectory(startDirectory, stopDirectory, async (directory) => {
+    const markerResults = await Promise.all(markers.map((marker) => hasMarkerFile(directory, marker)));
+    return markerResults.includes(true);
+  });
 }
 
 export function findMarkerDirectoryForFile(

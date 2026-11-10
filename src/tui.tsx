@@ -22,14 +22,16 @@ export default Plugin.define({
   setup(context) {
     // Every tui receives the snapshots of all project directories, so they are kept per project directory.
     const [storage, updateStorage] = context.storage.memory("lsp", {
-      initial: { snapshotsByProjectDirectory: {} as Record<string, PluginSnapshot> },
+      initial: { snapshotsByProjectDirectory: {} as Record<string, PluginSnapshot> | undefined },
     });
     const lspRpc = context.client.rpc(LspRpc);
 
     const disposeUpdatedListener = lspRpc.events.on("updated", (event) => {
       if (isPluginSnapshot(event.data)) {
         const snapshot = event.data;
-        updateStorage((draft) => void (draft.snapshotsByProjectDirectory[event.location.directory] = snapshot));
+        updateStorage(
+          (draft) => void ((draft.snapshotsByProjectDirectory ??= {})[event.location.directory] = snapshot),
+        );
       }
     });
 
@@ -48,12 +50,14 @@ export default Plugin.define({
           .then((snapshot) => {
             // An update event that arrived in the meantime is newer than this answer, so it is kept.
             if (isPluginSnapshot(snapshot)) {
-              updateStorage((draft) => void (draft.snapshotsByProjectDirectory[projectDirectory] ??= snapshot));
+              updateStorage(
+                (draft) => void ((draft.snapshotsByProjectDirectory ??= {})[projectDirectory] ??= snapshot),
+              );
             }
           })
           .catch(() => undefined);
       }
-      return storage.snapshotsByProjectDirectory[projectDirectory] ?? EMPTY_PLUGIN_SNAPSHOT;
+      return storage.snapshotsByProjectDirectory?.[projectDirectory] ?? EMPTY_PLUGIN_SNAPSHOT;
     };
 
     const renderServerRows = (snapshot: PluginSnapshot) => {

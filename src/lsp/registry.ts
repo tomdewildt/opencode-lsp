@@ -7,7 +7,7 @@ import { oxlint } from "./definitions/oxlint.ts";
 import { pyright } from "./definitions/pyright.ts";
 import { ruff } from "./definitions/ruff.ts";
 import { rust } from "./definitions/rust.ts";
-import type { ServerDefinition } from "./definitions/server.ts";
+import type { LaunchConfig, ServerDefinition } from "./definitions/server.ts";
 import { terraform } from "./definitions/terraform.ts";
 import { tflint } from "./definitions/tflint.ts";
 import { ty } from "./definitions/ty.ts";
@@ -28,12 +28,16 @@ export const DEFAULT_SERVER_DEFINITIONS: readonly ServerDefinition[] = [
   typescript,
 ];
 
+function buildOverriddenLaunchConfig(command: string[], override: ServerOverride): LaunchConfig {
+  return { command, env: override.env, initialization: override.options };
+}
+
 function buildCustomServerDefinition(id: string, override: ServerOverride, command: string[]): ServerDefinition {
   return {
     id,
     extensions: override.extensions ?? [],
     findWorkspaceDirectory: async (_file, projectDirectory) => projectDirectory,
-    findLaunchConfig: async () => ({ command, env: override.env, initialization: override.options }),
+    findLaunchConfig: async () => buildOverriddenLaunchConfig(command, override),
   };
 }
 
@@ -46,7 +50,7 @@ function buildOverriddenServerDefinition(
     extensions: override.extensions ?? defaultDefinition.extensions,
     findLaunchConfig: async (workspaceDirectory, projectDirectory) => {
       if (override.command) {
-        return { command: override.command, env: override.env, initialization: override.options };
+        return buildOverriddenLaunchConfig(override.command, override);
       }
 
       const launchConfig = await defaultDefinition.findLaunchConfig(workspaceDirectory, projectDirectory);
@@ -79,11 +83,10 @@ export function getServerDefinitions(
   );
   const activeDefaultDefinitions = enabledDefaultDefinitions
     .filter((definition) => !replacedServerIDs.has(definition.id))
-    .map((definition) =>
-      serverOverrides[definition.id]
-        ? buildOverriddenServerDefinition(definition, serverOverrides[definition.id]!)
-        : definition,
-    );
+    .map((definition) => {
+      const serverOverride = serverOverrides[definition.id];
+      return serverOverride ? buildOverriddenServerDefinition(definition, serverOverride) : definition;
+    });
 
   const defaultServerIDs = new Set(defaultDefinitions.map((definition) => definition.id));
   const customDefinitions = Object.entries(serverOverrides).flatMap(([id, serverOverride]) =>

@@ -41,16 +41,15 @@ export default Plugin.define({
     );
 
     const toolDefinitions = getToolDefinitions(DEFAULT_TOOL_DEFINITIONS, options);
-    const toolsRegistration = await ctx.tool.transform((tools) => {
-      for (const tool of buildTools(toolDefinitions, manager, projectDirectory, ctx.permission)) {
-        tools.add(tool);
+    const tools = buildTools(toolDefinitions, manager, projectDirectory, ctx.permission);
+    const toolsRegistration = await ctx.tool.transform((toolEditor) => {
+      for (const tool of tools) {
+        toolEditor.add(tool);
       }
     });
 
     return async () => {
-      for (const hookRegistration of hookRegistrations) {
-        await hookRegistration.dispose();
-      }
+      await Promise.all(hookRegistrations.map((hookRegistration) => hookRegistration.dispose()));
       await toolsRegistration.dispose();
       await manager.dispose();
       await rpcRegistration.dispose();

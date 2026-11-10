@@ -49,11 +49,14 @@ export const eslint: ServerDefinition = {
   findWorkspaceDirectory: (file, projectDirectory) =>
     findMarkerDirectoryForFile(file, projectDirectory, ESLINT_WORKSPACE_FILES),
   async findLaunchConfig(workspaceDirectory) {
-    if (!(await findNodeModule(workspaceDirectory, path.join("eslint", "package.json")))) {
+    const [manifest, binary] = await Promise.all([
+      findNodeModule(workspaceDirectory, path.join("eslint", "package.json")),
+      findBinary("vscode-eslint-language-server", workspaceDirectory),
+    ]);
+    if (!manifest) {
       return { reason: "eslint not installed in project" };
     }
 
-    const binary = await findBinary("vscode-eslint-language-server", workspaceDirectory);
     return binary
       ? buildLaunchConfig(binary, ["--stdio"], { settings: buildEslintClientSettings(workspaceDirectory) })
       : buildBinaryNotFound("vscode-eslint-language-server");

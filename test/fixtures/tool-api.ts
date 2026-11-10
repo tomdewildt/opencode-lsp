@@ -5,7 +5,6 @@ interface FakeToolCallEvent {
   tool: string;
   input: unknown;
   result: { output: unknown; content: string };
-  sessionID: string;
 }
 
 export function buildFakeToolApi() {
@@ -17,8 +16,8 @@ export function buildFakeToolApi() {
     },
   } as unknown as Plugin.Context["tool"];
 
-  const runHook = async (event: Omit<FakeToolCallEvent, "status" | "sessionID">): Promise<string> => {
-    const toolCallEvent = { status: "completed", sessionID: "session", ...event };
+  const runHook = async (event: Omit<FakeToolCallEvent, "status">): Promise<string> => {
+    const toolCallEvent = { status: "completed", ...event };
     await registeredHook!(toolCallEvent);
     return toolCallEvent.result.content;
   };

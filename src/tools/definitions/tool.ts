@@ -1,4 +1,9 @@
-import type { ServerCapabilities, TextDocumentPositionParams } from "vscode-languageserver-protocol";
+import {
+  type CallHierarchyItem,
+  CallHierarchyPrepareRequest,
+  type ServerCapabilities,
+  type TextDocumentPositionParams,
+} from "vscode-languageserver-protocol";
 import type { LspClient } from "../../lsp/client.ts";
 import type { OpencodeTool } from "../builder.ts";
 
@@ -69,3 +74,11 @@ export const WORKSPACE_INPUT = {
   required: ["path", "query"],
   additionalProperties: false,
 } as const;
+
+export async function findCallHierarchyItem(
+  client: LspClient,
+  { textDocument, position }: ToolRequestTarget,
+): Promise<CallHierarchyItem | undefined> {
+  const callHierarchyItems = await client.sendRequest(CallHierarchyPrepareRequest.type, { textDocument, position });
+  return callHierarchyItems?.[0];
+}

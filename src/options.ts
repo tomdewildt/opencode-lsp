@@ -8,11 +8,11 @@ export interface ServerOverride {
   options?: Record<string, unknown>;
 }
 
-export interface ToolOverride {
+export interface HookOverride {
   disabled?: boolean;
 }
 
-export interface HookOverride {
+export interface ToolOverride {
   disabled?: boolean;
 }
 
@@ -38,6 +38,7 @@ const DEFAULT_DIAGNOSTICS_TIMEOUT_MS = 5000;
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
+
 function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((item) => typeof item === "string");
 }
@@ -88,19 +89,6 @@ function parseServers(value: unknown): Record<string, ServerOverride> {
   );
 }
 
-// Tools and hooks can only be turned off, so `disabled` is their one field.
-function parseDisabledOverrides(value: unknown): Record<string, { disabled?: boolean }> {
-  if (!isRecord(value)) {
-    return {};
-  }
-
-  return Object.fromEntries(
-    Object.entries(value).flatMap(([name, entry]) =>
-      isRecord(entry) ? [[name, entry.disabled === true ? { disabled: true } : {}]] : [],
-    ),
-  );
-}
-
 export function parseOptions(raw: unknown): Options {
   const options = isRecord(raw) ? raw : {};
 
@@ -113,4 +101,16 @@ export function parseOptions(raw: unknown): Options {
     tools: parseDisabledOverrides(options.tools),
     hooks: parseDisabledOverrides(options.hooks),
   };
+}
+
+function parseDisabledOverrides(value: unknown): Record<string, HookOverride | ToolOverride> {
+  if (!isRecord(value)) {
+    return {};
+  }
+
+  return Object.fromEntries(
+    Object.entries(value).flatMap(([name, entry]) =>
+      isRecord(entry) ? [[name, entry.disabled === true ? { disabled: true } : {}]] : [],
+    ),
+  );
 }

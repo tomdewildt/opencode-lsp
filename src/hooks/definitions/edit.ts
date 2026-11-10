@@ -47,7 +47,7 @@ export function registerEditHook(
     }
 
     try {
-      const diagnosticsBeforeSync = manager.getDiagnostics();
+      const diagnosticsBeforeSync = event.tool === "write" ? manager.getDiagnostics() : new Map();
       const editedFileDiagnostics = await Promise.all(
         editedFiles.map(async (file) => {
           const { failures } = await manager.syncFileToServers(file, true);

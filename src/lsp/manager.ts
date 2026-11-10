@@ -60,11 +60,11 @@ export class LspManager {
 
     for (const client of this.getConnectedClients()) {
       for (const [file, diagnostics] of client.getDiagnostics()) {
-        diagnosticsByFile.set(file, deduplicateDiagnostics([...(diagnosticsByFile.get(file) ?? []), ...diagnostics]));
+        diagnosticsByFile.set(file, [...(diagnosticsByFile.get(file) ?? []), ...diagnostics]);
       }
     }
 
-    return diagnosticsByFile;
+    return new Map([...diagnosticsByFile].map(([file, diagnostics]) => [file, deduplicateDiagnostics(diagnostics)]));
   }
 
   getDiagnosticsForFile(file: string): Diagnostic[] {
